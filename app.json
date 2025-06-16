@@ -4,7 +4,7 @@
     "slug": "ParkPulse",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "assets/images/icons8-car-64.png",
+    "icon": "assets/images/car.png",
     "scheme": "parkpulse",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "assets/images/icons8-car-64.png",
+        "foregroundImage": "assets/images/car.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
@@ -21,14 +21,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "assets/images/icons8-car-64.png"
+      "favicon": "assets/images/car.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "assets/images/icons8-car-64.png",
+          "image": "assets/images/car.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
