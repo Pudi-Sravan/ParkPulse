@@ -1,19 +1,15 @@
 import { Stack } from "expo-router";
-import "./global.css";
-import { StatusBar } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StatusBar } from "react-native";
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar hidden={true} />
-      <Stack>
-        <Stack.Screen
-          name="(tabs)"
-          options={{
-            headerShown: false,
-          }}
-        />
+      <StatusBar hidden />
+      <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" /> 
+        <Stack.Screen name="(user)" options={{ headerShown: false }} />
+        <Stack.Screen name="(admin)" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>
   );

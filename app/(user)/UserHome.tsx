@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, Dimensions, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  ScrollView,
+} from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { images } from "@/constants/images";
+import { fetchSlots } from "@/services/appwrite";
 
 type SlotType = "car" | "bike" | "abled";
 
@@ -9,17 +17,6 @@ const SLOTS: Record<SlotType, string[]> = {
   car: ["C1", "C2", "C3"],
   bike: ["B1", "B2"],
   abled: ["A1"],
-};
-
-const mockFetchFromAppwrite = async (): Promise<Record<string, boolean>> => {
-  return {
-    C1: false,
-    C2: true,
-    C3: false,
-    B1: true,
-    B2: false,
-    A1: false,
-  };
 };
 
 interface SlotProps {
@@ -71,7 +68,14 @@ const Slot: React.FC<SlotProps> = ({ id, vacant }) => {
     >
       <Text style={{ color: "#aaa", fontSize: 16 }}>{id}</Text>
 
-      <View style={{ width: 60, height: 80, alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{
+          width: 60,
+          height: 80,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <Image
           source={getImageForSlot()}
           style={{
@@ -90,7 +94,6 @@ const Slot: React.FC<SlotProps> = ({ id, vacant }) => {
   );
 };
 
-
 const LiveParkingView: React.FC = () => {
   const [occupancy, setOccupancy] = useState<Record<string, boolean>>({});
   const [selected, setSelected] = useState<SlotType>("car");
@@ -99,7 +102,16 @@ const LiveParkingView: React.FC = () => {
   const anyVacant = isDataReady ? SLOTS[selected].some((slot) => occupancy[slot]) : false;
 
   useEffect(() => {
-    mockFetchFromAppwrite().then(setOccupancy);
+    const updateOccupancy = async () => {
+      const latest = await fetchSlots();
+      setOccupancy(latest);
+    };
+
+    updateOccupancy(); // Initial fetch
+
+    const interval = setInterval(updateOccupancy, 1000); // Update every 1 sec
+
+    return () => clearInterval(interval); // Cleanup on unmount
   }, []);
 
   const screenWidth = Dimensions.get("window").width;
@@ -107,9 +119,11 @@ const LiveParkingView: React.FC = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#181636" }}>
-      {/* Top Section (Darker) */}
+      {/* Top Header */}
       <View style={{ padding: 5, alignItems: "center", backgroundColor: "#181636" }}>
-        <Text style={{ fontSize: 28, fontWeight: "bold", color: "white", marginTop: 55 }}>Live Parking</Text>
+        <Text style={{ fontSize: 28, fontWeight: "bold", color: "white", marginTop: 55 }}>
+          Live Parking
+        </Text>
         <Text style={{ color: "#A8B5DB", marginTop: 4, textAlign: "center" }}>
           Walmart Supercenter, 1123 Main St.
         </Text>
@@ -146,16 +160,9 @@ const LiveParkingView: React.FC = () => {
         />
       </Svg>
 
-      {/* Bottom Section (Lighter) */}
-      <View
-        style={{
-          backgroundColor: "#0F0D23",
-          paddingBottom: 30,
-          minHeight: screenHeight, // Adjust based on top section height
-        }}
-      >
-        {/* Category Selector */}
-        {/* Category Selector */}
+      {/* Bottom Panel */}
+      <View style={{ backgroundColor: "#0F0D23", flex: 1, paddingBottom: 30 }}>
+        {/* Slot Type Selector */}
         <View
           style={{
             marginHorizontal: 20,
@@ -172,11 +179,15 @@ const LiveParkingView: React.FC = () => {
               type === "car"
                 ? images.car
                 : type === "bike"
-                  ? images.bike
-                  : images.abled;
+                ? images.bike
+                : images.abled;
 
             return (
-              <TouchableOpacity key={type} onPress={() => setSelected(type)} style={{ alignItems: "center" }}>
+              <TouchableOpacity
+                key={type}
+                onPress={() => setSelected(type)}
+                style={{ alignItems: "center" }}
+              >
                 <Image
                   source={icon}
                   style={{
@@ -199,8 +210,7 @@ const LiveParkingView: React.FC = () => {
           })}
         </View>
 
-
-        {/* Vertical Slots Column */}
+        {/* Slot List */}
         <View style={{ marginTop: 20 }}>
           {isDataReady &&
             SLOTS[selected].map((slotId) => (

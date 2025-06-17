@@ -15,7 +15,7 @@ function TabIcon({ focused, icon }: any) {
             <Image
                 source={icon}
                 style={{
-                    width: 30,       // Icon size
+                    width: 30,       
                     height: 30,
                     tintColor: focused ? "#00FFFF" : "#A8B5DB", 
                 }}
@@ -54,7 +54,7 @@ export default function TabsLayout() {
             }}
         >
             <Tabs.Screen
-                name="UserHome"
+                name="AdminHome"
                 options={{
                     title: "Home",
                     headerShown: false,
@@ -63,26 +63,7 @@ export default function TabsLayout() {
                     ),
                 }}
             />
-            <Tabs.Screen
-                name="plan"
-                options={{
-                    title: "Plan",
-                    headerShown: false,
-                    tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={icons.plan} />
-                    ),
-                }}
-            />
-            <Tabs.Screen
-                name="profile"
-                options={{
-                    title: "Profile",
-                    headerShown: false,
-                    tabBarIcon: ({ focused }) => (
-                        <TabIcon focused={focused} icon={icons.profile} />
-                    ),
-                }}
-            />
+           
         </Tabs>
     );
 }
