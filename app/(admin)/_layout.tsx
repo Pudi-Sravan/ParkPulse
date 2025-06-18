@@ -15,9 +15,9 @@ function TabIcon({ focused, icon }: any) {
             <Image
                 source={icon}
                 style={{
-                    width: 30,       
+                    width: 30,
                     height: 30,
-                    tintColor: focused ? "#00FFFF" : "#A8B5DB", 
+                    tintColor: focused ? "#00FFFF" : "#A8B5DB",
                 }}
             />
         </View>
@@ -46,10 +46,10 @@ export default function TabsLayout() {
                     borderWidth: 1,
                     borderColor: "#00FFFF33",
                     shadowColor: "#00FFFF",
-                    shadowOffset: { width: 0, height: 0 },   
-                    shadowOpacity: 0.08,                    
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.08,
                     shadowRadius: 4,
-                    elevation: 3,                            
+                    elevation: 3,
                 },
             }}
         >
@@ -63,7 +63,16 @@ export default function TabsLayout() {
                     ),
                 }}
             />
-           
+            <Tabs.Screen
+                name="addevent"
+                options={{
+                    title: "Event+",
+                    headerShown: false,
+                    tabBarIcon: ({ focused }) => (
+                        <TabIcon focused={focused} icon={icons.plan} />
+                    ),
+                }}
+            />
         </Tabs>
     );
 }

@@ -8,7 +8,7 @@ export default function Index() {
     if (!router.canGoBack()) {
       // Delay navigation until navigation is ready
       const timeout = setTimeout(() => {
-        const isAdmin = true; // your condition
+        const isAdmin = false; // your condition
         const path = isAdmin ? "/(admin)/AdminHome" : "/(user)/UserHome";
         console.log("Redirecting to:", path);
         router.replace(path);
