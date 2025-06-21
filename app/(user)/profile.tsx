@@ -1,35 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
-import { Client, Account, Databases, Query } from "react-native-appwrite";
 import { useNavigation } from "@react-navigation/native";
-
-const client = new Client()
-  .setEndpoint("https://fra.cloud.appwrite.io/v1")
-  .setProject(process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? "");
-
-const account = new Account(client);
-const database = new Databases(client);
-
-const DB_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID ?? '';
-const COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_USERS_COLLECTION_ID ?? '';
+import { fetchUserByEmail } from "@/services/appwrite";
+import { useUser } from "@/context/userstore";
 
 export default function Profile() {
   const navigation = useNavigation();
+  const { email } = useUser(); 
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
+console.log(email)
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const session = await account.get();
-        const userEmail = session.email;
+        if (!email) throw new Error("Email not available in context");
 
-        const result = await database.listDocuments(DB_ID, COLLECTION_ID, [
-          Query.equal("mail", [userEmail]),
-        ]);
-
-        const userDoc = result.documents[0];
-        setUsername(userDoc?.username ?? "Unknown User");
+        const user = await fetchUserByEmail(email);
+        setUsername(user?.username ?? "Unknown User");
       } catch (error: any) {
         Alert.alert("Error", error.message);
       } finally {
@@ -38,18 +25,13 @@ export default function Profile() {
     };
 
     fetchUser();
-  }, []);
+  }, [email]);
 
-  const handleLogout = async () => {
-    try {
-      await account.deleteSession("current");
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "auth" as never }],
-      });
-    } catch (error: any) {
-      Alert.alert("Logout Error", error.message);
-    }
+  const handleLogout = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "auth" as never }],
+    });
   };
 
   return (

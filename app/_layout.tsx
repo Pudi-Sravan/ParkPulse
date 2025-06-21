@@ -1,9 +1,11 @@
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "react-native";
+import { UserProvider } from '@/context/userstore';
 
 export default function RootLayout() {
   return (
+    <UserProvider>
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar hidden />
       <Stack screenOptions={{ headerShown: false }}>
@@ -13,5 +15,6 @@ export default function RootLayout() {
         <Stack.Screen name="auth" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>
+    </UserProvider>
   );
 }

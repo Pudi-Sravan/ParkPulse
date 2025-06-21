@@ -263,3 +263,9 @@ export const getUserRoleFromSession = async (): Promise<string> => {
     throw new Error("No active session");
   }
 };
+export const fetchUserByEmail = async (email: string) => {
+  const res = await database.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+    Query.equal('mail', [email]),
+  ]);
+  return res.documents[0];
+};

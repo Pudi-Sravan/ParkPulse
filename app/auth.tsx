@@ -9,14 +9,17 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { sendOtp, verifyOtpAndRegister, loginUser } from '@/services/appwrite';
+import { useUser } from '@/context/userstore';
 
 const LoginRegisterScreen = () => {
   const [isRegistering, setIsRegistering] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmailInput] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [userId, setUserId] = useState('');
+
+  const { setEmail } = useUser(); 
 
   const handleSendOtp = async () => {
     try {
@@ -33,6 +36,7 @@ const LoginRegisterScreen = () => {
   const handleVerifyOtp = async () => {
     try {
       await verifyOtpAndRegister(userId, otp, email, username, password);
+      setEmail(email); // ✅ Save in context
       Alert.alert('Registration successful');
       router.replace('/(user)/UserHome');
     } catch (error: unknown) {
@@ -44,6 +48,7 @@ const LoginRegisterScreen = () => {
   const handleLogin = async () => {
     try {
       const user = await loginUser(email, password);
+      setEmail(email); // ✅ Save in context
       const path = user.role === 'admin' ? '/(admin)/AdminHome' : '/(user)/UserHome';
       router.replace(path);
     } catch (error: unknown) {
@@ -60,7 +65,7 @@ const LoginRegisterScreen = () => {
         style={styles.input}
         placeholder="Email"
         placeholderTextColor="#888"
-        onChangeText={setEmail}
+        onChangeText={setEmailInput}
         value={email}
         keyboardType="email-address"
         autoCapitalize="none"
