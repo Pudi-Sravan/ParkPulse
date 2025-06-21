@@ -1,18 +1,27 @@
-import { Client, Databases, ID, Query } from "react-native-appwrite";
+// appwrite.ts
+import { Client, Databases, ID, Query, Account } from "react-native-appwrite";
 import axios from "axios";
+import SHA256 from "crypto-js/sha256";
 
+// 🔐 Environment Variables
 const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
 const PARKING_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_PARKING_COLLECTION_ID!;
 const WAITLOG_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_WAITLOG_COLLECTION_ID!;
 const EVENT_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_EVENT_COLLECTION_ID!;
+const USERS_COLLECTION_ID = process.env.EXPO_PUBLIC_APPWRITE_USERS_COLLECTION_ID!;
 const FLASK_SERVER_URL = process.env.EXPO_PUBLIC_FLASK_SERVER!;
+const PROJECT_ID = process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID!;
 
+// ⚙️ Appwrite Client
 const client = new Client()
   .setEndpoint("https://fra.cloud.appwrite.io/v1")
-  .setProject(process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID!);
+  .setProject(PROJECT_ID);
 
 const database = new Databases(client);
-console.log(database)
+const account = new Account(client);
+
+// ============================ 🔲 SLOT FUNCTIONS ============================
+
 export const fetchSlots = async (): Promise<Record<string, boolean>> => {
   try {
     const res = await database.listDocuments(DATABASE_ID, PARKING_COLLECTION_ID);
@@ -21,6 +30,7 @@ export const fetchSlots = async (): Promise<Record<string, boolean>> => {
     res.documents.forEach((doc) => {
       data[doc.Slotid] = doc.Vacancy;
     });
+
     return data;
   } catch (error) {
     console.error("Error fetching slots:", error);
@@ -32,13 +42,11 @@ export const toggleSlotVacancy = async (slotId: string, currentStatus: boolean) 
   const now = new Date();
   const isoTime = now.toISOString();
 
-  const slotType = slotId.startsWith("C")
-    ? "car"
-    : slotId.startsWith("B")
-      ? "bike"
-      : slotId.startsWith("A")
-        ? "abled"
-        : "unknown";
+  const slotType =
+    slotId.startsWith("C") ? "car" :
+    slotId.startsWith("B") ? "bike" :
+    slotId.startsWith("A") ? "abled" :
+    "unknown";
 
   try {
     const res = await database.listDocuments(DATABASE_ID, PARKING_COLLECTION_ID, [
@@ -48,7 +56,7 @@ export const toggleSlotVacancy = async (slotId: string, currentStatus: boolean) 
     const existingDoc = res.documents[0];
     const newStatus = !currentStatus;
 
-    // ⬛ Update or create the slot document
+    // 🔁 Update/Create
     if (existingDoc) {
       await database.updateDocument(DATABASE_ID, PARKING_COLLECTION_ID, existingDoc.$id, {
         Vacancy: newStatus,
@@ -64,8 +72,8 @@ export const toggleSlotVacancy = async (slotId: string, currentStatus: boolean) 
       });
     }
 
-    // ⬛ Handle Occupy
-    if (newStatus === false) {
+    // ⬛ Occupy
+    if (!newStatus) {
       const allSlots = await database.listDocuments(DATABASE_ID, PARKING_COLLECTION_ID, [
         Query.equal("slot_type", slotType),
       ]);
@@ -76,7 +84,6 @@ export const toggleSlotVacancy = async (slotId: string, currentStatus: boolean) 
         const eventRes = await database.listDocuments(DATABASE_ID, EVENT_COLLECTION_ID, [
           Query.equal("event_date", isoTime.split("T")[0]),
         ]);
-
         const isEventDay = eventRes.documents.length > 0 ? 1 : 0;
         const eventType = isEventDay ? eventRes.documents[0].event_type : "regular";
 
@@ -89,16 +96,16 @@ export const toggleSlotVacancy = async (slotId: string, currentStatus: boolean) 
       }
     }
 
-    // ⬛ Handle Vacate
-    if (newStatus === true) {
+    // ⬛ Vacate
+    if (newStatus) {
       const { dayOfWeek } = getDayInfo(isoTime);
+
       const eventRes = await database.listDocuments(DATABASE_ID, EVENT_COLLECTION_ID, [
         Query.equal("event_date", isoTime.split("T")[0]),
       ]);
       const isEventDay = eventRes.documents.length > 0 ? 1 : 0;
       const eventType = isEventDay ? eventRes.documents[0].event_type : "regular";
 
-      // 🔵 Send slot vacated data (always)
       if (existingDoc?.check_in) {
         const payload = {
           slot_id: slotId,
@@ -110,33 +117,31 @@ export const toggleSlotVacancy = async (slotId: string, currentStatus: boolean) 
           is_event_day: isEventDay,
           wait_time_minute: 0,
         };
+
         try {
           await axios.post(`${FLASK_SERVER_URL}/newdata`, payload);
-        } catch (axiosErr) {
-          console.error("Flask Error (vacated slot):", axiosErr?.response?.data || axiosErr.message);
+        } catch (err) {
+          console.error("Flask Error (vacated):", err?.response?.data || err.message);
         }
       }
 
-      // 🔵 Check for wait log and post that too if exists
       const logs = await database.listDocuments(DATABASE_ID, WAITLOG_COLLECTION_ID, [
         Query.equal("category", slotType),
         Query.isNull("check_out"),
       ]);
 
       if (logs.documents.length > 0) {
-        const firstLog = logs.documents[0];
-        const checkin = new Date(firstLog.check_in);
-        const waitTime = Math.max(0, Math.floor((now.getTime() - checkin.getTime()) / 60000));
+        const log = logs.documents[0];
+        const waitTime = Math.floor((now.getTime() - new Date(log.check_in).getTime()) / 60000);
 
-        // ⬛ Update waitlog
-        await database.updateDocument(DATABASE_ID, WAITLOG_COLLECTION_ID, firstLog.$id, {
+        await database.updateDocument(DATABASE_ID, WAITLOG_COLLECTION_ID, log.$id, {
           check_out: isoTime,
           wait_time: waitTime,
         });
 
         const waitPayload = {
           slot_id: slotId,
-          checkin_timestamp: firstLog.check_in,
+          checkin_timestamp: log.check_in,
           checkout_timestamp: isoTime,
           day_of_week: dayOfWeek,
           slot_type: slotType,
@@ -147,8 +152,8 @@ export const toggleSlotVacancy = async (slotId: string, currentStatus: boolean) 
 
         try {
           await axios.post(`${FLASK_SERVER_URL}/newdata`, waitPayload);
-        } catch (axiosErr) {
-          console.error("Flask Error (wait log):", axiosErr?.response?.data || axiosErr.message);
+        } catch (err) {
+          console.error("Flask Error (wait log):", err?.response?.data || err.message);
         }
       }
     }
@@ -157,7 +162,6 @@ export const toggleSlotVacancy = async (slotId: string, currentStatus: boolean) 
   }
 };
 
-// 📦 Utility
 const getDayInfo = (isoDate: string) => {
   const date = new Date(isoDate);
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -166,30 +170,25 @@ const getDayInfo = (isoDate: string) => {
   return { dayOfWeek, isWeekend };
 };
 
+// ============================ 📅 EVENT FUNCTIONS ============================
 
-// === Event Functions ===
-// Updated createOrUpdateEvent to enforce unique date
 export const createOrUpdateEvent = async (eventId: string | null, eventData: any) => {
   try {
     const dateStr = eventData.event_date;
-
-    // Fetch if an event already exists for the same date
     const existingEvents = await fetchEvents();
-    const existingForDate = existingEvents.find((e: any) => e.event_date.split("T")[0] === dateStr);
+    const match = existingEvents.find((e: any) => e.event_date.split("T")[0] === dateStr);
 
-    if (eventId || existingForDate) {
-      // If updating or duplicate found, update instead of creating
-      const updateId = eventId || existingForDate?.$id;
-      await database.updateDocument(DATABASE_ID, EVENT_COLLECTION_ID, updateId, eventData);
+    const targetId = eventId || match?.$id;
+
+    if (targetId) {
+      await database.updateDocument(DATABASE_ID, EVENT_COLLECTION_ID, targetId, eventData);
     } else {
-      // If date is unique, create a new event
       await database.createDocument(DATABASE_ID, EVENT_COLLECTION_ID, ID.unique(), eventData);
     }
   } catch (error) {
     console.error("Error creating/updating event:", error);
   }
 };
-
 
 export const fetchEvents = async (filterType: string | null = null) => {
   try {
@@ -210,3 +209,57 @@ export const deleteEvent = async (eventId: string) => {
   }
 };
 
+// ============================ 🔐 AUTH & SESSION FUNCTIONS ============================
+
+export const sendOtp = async (email: string): Promise<string> => {
+  const token = await account.createEmailToken(ID.unique(), email);
+  return token.userId;
+};
+
+export const verifyOtpAndRegister = async (
+  userId: string,
+  otp: string,
+  email: string,
+  username: string,
+  password: string
+) => {
+  await account.createSession(userId, otp);
+
+  const hashedPassword = SHA256(password).toString();
+
+  await database.createDocument(DATABASE_ID, USERS_COLLECTION_ID, ID.unique(), {
+    username,
+    mail: email,
+    password: hashedPassword,
+    role: 'user',
+  });
+};
+
+export const loginUser = async (email: string, password: string) => {
+  const res = await database.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+    Query.equal('mail', [email]),
+  ]);
+
+  if (res.documents.length === 0) throw new Error('User not found');
+
+  const user = res.documents[0];
+  const hashedPassword = SHA256(password).toString();
+
+  if (user.password !== hashedPassword) throw new Error('Incorrect password');
+
+  return user;
+};
+
+export const getUserRoleFromSession = async (): Promise<string> => {
+  try {
+    const session = await account.get();
+    const email = session.email;
+
+    const userDocs = await database.listDocuments(DATABASE_ID, USERS_COLLECTION_ID);
+    const user = userDocs.documents.find((doc) => doc.mail === email);
+
+    return user?.role || "user";
+  } catch (error) {
+    throw new Error("No active session");
+  }
+};

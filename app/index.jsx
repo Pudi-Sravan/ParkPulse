@@ -1,23 +1,23 @@
-import { useEffect } from "react";
-import { useRouter } from "expo-router";
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import { getUserRoleFromSession } from '@/services/appwrite';
 
 export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!router.canGoBack()) {
-      // Delay navigation until navigation is ready
-      const timeout = setTimeout(() => {
-        const isAdmin = false; // your condition
-        const path = isAdmin ? "/(admin)/AdminHome" : "/(user)/UserHome";
-        console.log("Redirecting to:", path);
+    const checkUserSession = async () => {
+      try {
+        const role = await getUserRoleFromSession();
+        const path = role === 'admin' ? '/(admin)/AdminHome' : '/(user)/UserHome';
         router.replace(path);
-      }, 50); // slight delay to wait for router
+      } catch (error) {
+        router.replace('/auth'); // No session or error
+      }
+    };
 
-      return () => clearTimeout(timeout);
-    }
+    checkUserSession();
   }, []);
 
-  console.log("Index.tsx rendered");
   return null;
 }

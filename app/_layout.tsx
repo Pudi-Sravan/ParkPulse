@@ -10,6 +10,7 @@ export default function RootLayout() {
       <Stack.Screen name="index" /> 
         <Stack.Screen name="(user)" options={{ headerShown: false }} />
         <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>
   );
