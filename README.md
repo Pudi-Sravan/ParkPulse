@@ -1,50 +1,118 @@
-# Welcome to your Expo app 👋
+# 🚗 ParkPulse – Smart Parking Prediction App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## 📖 Table of Contents
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Demo](#demo)
+- [Appwrite Setup](#appwrite-setup)
+- [Local Setup](#local-setup)
+- [Flask Prediction Server](#flask-prediction-server)
+- [Future Improvements](#future-improvements)
 
-## Get started
+## 🌟 Overview
+ParkPulse is a **real-time smart parking solution** developed for the Walmart Sparkathon. It provides:
+- **Live parking availability**
+- **Wait-time predictions** using ML
+- **Future planning** for parking slots (Cars, Bikes, Physically Abled)
 
-1. Install dependencies
+Designed for both **users** and **admins**, ParkPulse simplifies parking during peak hours and events.
 
-   ```bash
-   npm install
-   ```
+## 🎯 Key Features
 
-2. Start the app
+| Feature | Description |
+|---------|-------------|
+| 🔐 OTP Login | Secure authentication for users |
+| 📍 Live Tracking | Real-time vacancy updates for 3 slot types |
+| ⏱️ Wait Predictions | ML-powered estimates when slots are full |
+| 📅 Trip Planner | Check future availability probabilities |
+| 📊 Admin Panel | Manage slots, events, and view analytics |
 
-   ```bash
-   npx expo start
-   ```
+## 🛠️ Tech Stack
+- **Frontend**: React Native + Expo
+- **Backend**: Appwrite Cloud DB
+- **ML Server**: Flask (Python)
+- **Styling**: Tailwind CSS (Nativewind)
 
-In the output, you'll find options to open the app in a
+## 📹 Demo
+Watch the [Demo Video](https://drive.google.com/file/d/1TblDwl9gicRjzqaBoa8vXxgzsFtwGBh7/view?usp=sharing)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🗃️ Appwrite Setup
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Collections Structure
 
-## Get a fresh project
+#### 1. `parking` Collection 
+**Attributes:**
+| Key | Type | Required |
+|-----|------|----------|
+| Slotid | String | Yes |
+| Vacancy | Boolean | Yes |
+| check_in | String | No |
+| check_out | String | No |
+| slot_type | Enum | Yes |
 
-When you're ready, run:
+#### 2. `waiting` Collection 
+**Attributes:**
+| Key | Type | Required |
+|-----|------|----------|
+| slotid | String | Yes |
+| wait_time | Double | No |
+| check_in | String | Yes |
+| check_out | String | No |
+| category | Enum | Yes |
 
+#### 3. `event` Collection 
+**Attributes:**
+| Key | Type | Required |
+|-----|------|----------|
+| event_name | String | Yes |
+| event_type | Enum | Yes |
+| event_date | DateTime | Yes |
+
+## ⚙️ Local Setup
+
+### 1. Clone Repo & Install Dependencies
 ```bash
-npm run reset-project
+git clone https://github.com/Pudi-Sravan/ParkPulse.git
+cd ParkPulse
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Configure Environment
+Create `.env` with:
+```env
+EXPO_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
+EXPO_PUBLIC_APPWRITE_DATABASE_ID=
+EXPO_PUBLIC_APPWRITE_PARKING_COLLECTION_ID=
+EXPO_PUBLIC_APPWRITE_WAITLOG_COLLECTION_ID=
+EXPO_PUBLIC_APPWRITE_EVENT_COLLECTION_ID=
+EXPO_PUBLIC_FLASK_SERVER=http://localhost:5000
+```
 
-## Learn more
+### 3. Start Expo
+```bash
+npx expo start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🐍 Flask Prediction Server
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+For the ML prediction server setup, please refer to the dedicated repository:
+[Parking Availability Predictor](https://github.com/Pudi-Sravan/Parking_avl_predictor)
 
-## Join the community
+To connect with the Flask server locally:
+1. Visit the repository link above
+2. Follow the setup instructions in that repo
+3. Run the Flask server
+4. Ensure port 5000 is open on your system to connect locally
 
-Join our community of developers creating universal apps.
+### API Endpoints:
+- `POST /predict_wait` – Returns wait time estimates
+- `POST /predict_availability` – Future slot probability
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 🚀 Future Improvements
+- Camera-based slot detection
+- Google Maps integration
+
+---
+
+**Plan. Predict. Park.** 🚀 Powered by ParkPulse!
